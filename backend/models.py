@@ -17,6 +17,13 @@ class MountainCrossing(Model):
         ),
     )
 
+    def __str__(self):
+        prefix = self.raw_data["beautyTitle"].strip()
+        title = self.raw_data["title"]
+        other_names = self.raw_data["other_titles"]
+
+        return f"{prefix} {title} ({other_names})"
+
     class Meta:
         db_table = "pereval_added"
 
