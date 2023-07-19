@@ -3,6 +3,7 @@ from datetime import datetime
 import json
 
 from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
 
 from backend.models import MountainCrossing, CrossingImages
 
@@ -61,6 +62,7 @@ class Crossing:
         return crossing.pk
 
 
+@require_http_methods(["POST"])
 def submit_data(request):
     try:
         incoming_data = json.loads(request.body)
