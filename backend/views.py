@@ -22,50 +22,67 @@ def check_json_schema(data):
             )
 
 
+class Crossing:
+    raw_data = {}
+    images = []
+
+    def set_data(self, data):
+        self.raw_data = data
+
+    def add_image(self, title, encoded_data):
+        raw_image = base64.b64decode(encoded_data)
+        self.images.append((title, raw_image))
+
+    def save_to_db(self):
+        crossing = MountainCrossing()
+        crossing.raw_data = self.raw_data
+        crossing.date_added = datetime.now()
+        saved_images = []
+
+        for title, image_bytes in self.images:
+            # Преобразуем закодированное фото в бинарные данные для БД
+            img_record = CrossingImages(
+                date_added=datetime.now(),
+                img=image_bytes,
+            )
+            img_record.save()
+
+            # Свяжем записи в таблицах перевалов и фотографий
+            saved_images.append(
+                {
+                    "id": img_record.pk,
+                    "title": title,
+                }
+            )
+        crossing.images = {
+            "images": saved_images,
+        }
+        crossing.save()
+        return crossing.pk
+
+
 def submit_data(request):
     try:
         incoming_data = json.loads(request.body)
         # Проверим корректность пришедших данных
         check_json_schema(incoming_data)
 
-        new_crossing = create_crossing_object(incoming_data)
+        new_crossing = Crossing()
+        new_crossing.set_data(incoming_data)
+
+        for image in incoming_data["images"]:
+            new_crossing.add_image(image["title"], image["data"])
+
+        object_id = new_crossing.save_to_db()
 
         return JsonResponse(
             {
                 "status": 200,
                 "message": None,
-                "id": new_crossing.pk,
+                "id": object_id,
             }
         )
     except JsonSchemaError as exc:
         return JsonResponse({"status": 400, "message": str(exc), "id": None})
     except Exception as exc:
         return JsonResponse({"status": 500, "message": str(exc), "id": None})
-
-
-def create_crossing_object(incoming_data):
-    new_crossing = MountainCrossing()
-    new_crossing.raw_data = incoming_data
-    new_crossing.date_added = datetime.now()
-    saved_images = []
-
-    for image in incoming_data["images"]:
-        # Преобразуем закодированное фото в бинарные данные для БД
-        img_record = CrossingImages(
-            date_added=datetime.now(),
-            img=base64.b64decode(image["data"]),
-        )
-        img_record.save()
-
-        # Свяжем записи в таблицах перевалов и фотографий
-        saved_images.append(
-            {
-                "id": img_record.pk,
-                "title": image["title"],
-            }
-        )
-    new_crossing.images = {
-        "images": saved_images,
-    }
-    new_crossing.save()
-    return new_crossing
