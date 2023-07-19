@@ -7,13 +7,19 @@ from django.http import JsonResponse
 from backend.models import MountainCrossing, CrossingImages
 
 
+class JsonSchemaError(Exception):
+    pass
+
+
 def check_json_schema(data):
     if "images" not in data:
-        raise ValueError("Отсутствуют ключ 'images'")
+        raise JsonSchemaError("Отсутствуют ключ 'images'")
 
     for image in data["images"]:
         if "data" not in image:
-            raise ValueError("Отсутствует ключ 'data' в прикрепленном изображении!")
+            raise JsonSchemaError(
+                "Отсутствует ключ 'data' в прикрепленном изображении!"
+            )
 
 
 def submit_data(request):
@@ -31,6 +37,8 @@ def submit_data(request):
                 "id": new_crossing.pk,
             }
         )
+    except JsonSchemaError as exc:
+        return JsonResponse({"status": 400, "message": str(exc), "id": None})
     except Exception as exc:
         return JsonResponse({"status": 500, "message": str(exc), "id": None})
 
