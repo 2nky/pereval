@@ -17,6 +17,11 @@ def check_json_schema(data):
         raise JsonSchemaError("Отсутствуют ключ 'images'")
 
     for image in data["images"]:
+        if "title" not in image:
+            raise JsonSchemaError(
+                "Отсутствует ключ 'title' в прикрепленном изображении!"
+            )
+
         if "data" not in image:
             raise JsonSchemaError(
                 "Отсутствует ключ 'data' в прикрепленном изображении!"
