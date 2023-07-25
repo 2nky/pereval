@@ -125,4 +125,6 @@ def get_crossing_by_id(request, record_id):
 
     response = {}
     response.update(crossing.raw_data)
+    response["status"] = crossing.status
+
     return JsonResponse(response)
