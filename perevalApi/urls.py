@@ -22,4 +22,5 @@ from backend import views
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("submitData/", views.submit_data),
+    path("submitData/<int:record_id>/", views.get_crossing_by_id),
 ]

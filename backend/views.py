@@ -2,7 +2,7 @@ import base64
 from datetime import datetime
 import json
 
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse, HttpResponseNotFound
 from django.views.decorators.http import require_http_methods
 
 from backend.models import MountainCrossing, CrossingImages
@@ -31,6 +31,7 @@ def check_json_schema(data):
 class Crossing:
     raw_data = {}
     images = []
+    status = "new"
 
     def set_data(self, data):
         self.raw_data = data
@@ -66,6 +67,27 @@ class Crossing:
         crossing.save()
         return crossing.pk
 
+    @staticmethod
+    def get_by_id(record_id):
+        try:
+            # Получаем объект из БД
+            crossing_from_db = MountainCrossing.objects.get(pk=record_id)
+
+            # Заполняем объект данными из БД
+            new_object = Crossing()
+            new_object.raw_data = crossing_from_db.raw_data
+            new_object.status = crossing_from_db.status
+
+            # Достать из БД связанные с перевалом изображения
+            for image_record in crossing_from_db.images["images"]:
+                linked_photo_obj = CrossingImages.objects.get(pk=image_record["id"])
+                new_object.images.append((image_record["title"], linked_photo_obj.img))
+
+            return new_object
+
+        except MountainCrossing.DoesNotExist:
+            return None
+
 
 @require_http_methods(["POST"])
 def submit_data(request):
@@ -93,3 +115,14 @@ def submit_data(request):
         return JsonResponse({"status": 400, "message": str(exc), "id": None})
     except Exception as exc:
         return JsonResponse({"status": 500, "message": str(exc), "id": None})
+
+
+@require_http_methods(["GET"])
+def get_crossing_by_id(request, record_id):
+    crossing = Crossing.get_by_id(record_id)
+    if crossing is None:
+        return HttpResponseNotFound(f"Crossing with ID={record_id} not found.")
+
+    response = {}
+    response.update(crossing.raw_data)
+    return JsonResponse(response)
