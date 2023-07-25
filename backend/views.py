@@ -126,5 +126,14 @@ def get_crossing_by_id(request, record_id):
     response = {}
     response.update(crossing.raw_data)
     response["status"] = crossing.status
+    response["images"] = []
+
+    for title, image_bytes in crossing.images:
+        response["images"].append(
+            {
+                "title": title,
+                "data": base64.b64encode(image_bytes).decode("ascii"),
+            }
+        )
 
     return JsonResponse(response)
