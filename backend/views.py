@@ -2,7 +2,13 @@ import base64
 from datetime import datetime
 import json
 
-from django.http import JsonResponse, HttpResponse, HttpResponseNotFound
+from django.http import (
+    JsonResponse,
+    HttpResponse,
+    HttpResponseNotFound,
+    HttpResponseNotAllowed,
+    HttpResponseGone,
+)
 from django.views.decorators.http import require_http_methods
 
 from backend.models import MountainCrossing, CrossingImages
@@ -32,6 +38,7 @@ class Crossing:
     raw_data = {}
     images = []
     status = "new"
+    object_pk = None
 
     def set_data(self, data):
         self.raw_data = data
@@ -41,7 +48,13 @@ class Crossing:
         self.images.append((title, raw_image))
 
     def save_to_db(self):
-        crossing = MountainCrossing()
+        # Если объект уже есть в БД, то используем его
+        try:
+            print(f"Updating object with {self.object_pk}")
+            crossing = MountainCrossing.objects.get(pk=self.object_pk)
+        except MountainCrossing.DoesNotExist:
+            crossing = MountainCrossing()
+
         crossing.raw_data = self.raw_data
         crossing.date_added = datetime.now()
         saved_images = []
@@ -65,6 +78,8 @@ class Crossing:
             "images": saved_images,
         }
         crossing.save()
+
+        crossing.object_pk = crossing.pk
         return crossing.pk
 
     @staticmethod
@@ -77,6 +92,7 @@ class Crossing:
             new_object = Crossing()
             new_object.raw_data = crossing_from_db.raw_data
             new_object.status = crossing_from_db.status
+            new_object.object_pk = record_id
 
             # Достать из БД связанные с перевалом изображения
             for image_record in crossing_from_db.images["images"]:
@@ -117,17 +133,47 @@ def submit_data(request):
         return JsonResponse({"status": 500, "message": str(exc), "id": None})
 
 
-@require_http_methods(["GET"])
-def get_crossing_by_id(request, record_id):
+def update_by_id(record_id, request):
+    try:
+        incoming_data = json.loads(request.body)
+
+        crossing = Crossing.get_by_id(record_id)
+        crossing.set_data(incoming_data)
+        crossing.save_to_db()
+
+        return JsonResponse(
+            {
+                "state": 1,
+                "message": "",
+            }
+        )
+    except Exception as exc:
+        return JsonResponse(
+            {
+                "state": 0,
+                "message": str(exc),
+            }
+        )
+
+
+@require_http_methods(["GET", "PATCH"])
+def single_crossing_operations(request, record_id):
+    if request.method == "GET":
+        return get_by_id(record_id)
+    elif request.method == "PATCH":
+        return update_by_id(record_id, request)
+
+    return HttpResponseNotAllowed(["GET", "PATCH"])
+
+
+def get_by_id(record_id):
     crossing = Crossing.get_by_id(record_id)
     if crossing is None:
         return HttpResponseNotFound(f"Crossing with ID={record_id} not found.")
-
     response = {}
     response.update(crossing.raw_data)
     response["status"] = crossing.status
     response["images"] = []
-
     for title, image_bytes in crossing.images:
         response["images"].append(
             {
@@ -135,5 +181,4 @@ def get_crossing_by_id(request, record_id):
                 "data": base64.b64encode(image_bytes).decode("ascii"),
             }
         )
-
     return JsonResponse(response)
