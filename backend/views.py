@@ -49,14 +49,14 @@ class Crossing:
 
         # Ищем уже существующее изображение с таким заголовком...
         existing_image_index = None
-        for index, data in self.images:
+        for index, data in enumerate(self.images):
             if data[0] == title:
                 existing_image_index = index
                 break
 
         # ...и если оно есть - удаляем.
-        if existing_image_index:
-            self.images.remove(existing_image_index)
+        if existing_image_index is not None:
+            self.images.pop(existing_image_index)
 
         self.images.append((title, raw_image))
 
@@ -160,12 +160,13 @@ def update_by_id(record_id, request):
     try:
         incoming_data = json.loads(request.body)
 
-        # Изображения должны сохраняться в отдельную таблицу
-        images = incoming_data.pop("images", [])
-
         crossing = Crossing.get_by_id(record_id)
-        crossing.set_data(incoming_data)
+        # Изображения должны сохраняться в отдельную таблицу
+        incoming_images = incoming_data.pop("images", [])
+        for image in incoming_images:
+            crossing.add_image(image["title"], image["data"])
 
+        crossing.set_data(incoming_data)
         crossing.save_to_db()
 
         return JsonResponse(
