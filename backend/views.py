@@ -8,6 +8,7 @@ from django.http import (
     HttpResponseNotFound,
     HttpResponseNotAllowed,
     HttpResponseGone,
+    HttpResponseBadRequest,
 )
 from django.views.decorators.http import require_http_methods
 
@@ -131,9 +132,40 @@ class Crossing:
         except MountainCrossing.DoesNotExist:
             return None
 
+    @staticmethod
+    def crossings_by_user(email):
+        return MountainCrossing.objects.filter(raw_data__user__email=email).values_list(
+            "pk", flat=True
+        )
 
-@require_http_methods(["POST"])
+
+@require_http_methods(["GET", "POST"])
 def submit_data(request):
+    if request.method == "POST":
+        return create_crossing_data(request)
+    elif request.method == "GET":
+        user_email = request.GET.get("user__email")
+
+        # Проверим что передам необходимый параметр
+        if user_email is None:
+            return HttpResponseBadRequest()
+
+        return users_crossing(user_email)
+
+    return HttpResponseNotAllowed(["GET", "POST"])
+
+
+def users_crossing(email):
+    result = []
+    record_pks = Crossing.crossings_by_user(email)
+    for crossing_pk in record_pks:
+        crossing = Crossing.get_by_id(crossing_pk)
+        result.append(crossing_to_json(crossing))
+
+    return JsonResponse({"crossings": result})
+
+
+def create_crossing_data(request):
     try:
         incoming_data = json.loads(request.body)
         # Проверим корректность пришедших данных
@@ -206,6 +238,11 @@ def get_by_id(record_id):
     crossing = Crossing.get_by_id(record_id)
     if crossing is None:
         return HttpResponseNotFound(f"Crossing with ID={record_id} not found.")
+
+    return JsonResponse(crossing_to_json(crossing))
+
+
+def crossing_to_json(crossing):
     response = {}
     response.update(crossing.raw_data)
     response["status"] = crossing.status
@@ -217,4 +254,4 @@ def get_by_id(record_id):
                 "data": base64.b64encode(image_bytes).decode("ascii"),
             }
         )
-    return JsonResponse(response)
+    return response
