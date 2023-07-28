@@ -18,6 +18,10 @@ class JsonSchemaError(Exception):
     pass
 
 
+class ForbiddenFieldEdit(Exception):
+    pass
+
+
 def check_json_schema(data):
     if "images" not in data:
         raise JsonSchemaError("Отсутствуют ключ 'images'")
@@ -159,6 +163,7 @@ def submit_data(request):
 def update_by_id(record_id, request):
     try:
         incoming_data = json.loads(request.body)
+        check_json_schema(incoming_data)
 
         crossing = Crossing.get_by_id(record_id)
         # Изображения должны сохраняться в отдельную таблицу
