@@ -40,11 +40,12 @@ def check_json_schema(data):
 
 
 class Crossing:
-    raw_data = {}
-    images = []
-    status = "new"
-    object_pk = None
-    _image_title_to_pk = {}
+    def __init__(self):
+        self.raw_data = {}
+        self.images = []
+        self._image_title_to_pk = {}
+        self.object_pk = None
+        self.status = "new"
 
     def set_data(self, data):
         self.raw_data = data
