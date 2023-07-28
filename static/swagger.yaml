@@ -1,0 +1,151 @@
+openapi: 3.0.0
+info:
+  title: Перевал
+  description: Система учета пройденных перевалов
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000/
+    description: Django development server
+    variables:
+      protocols:
+        enum:
+          - http
+          - https
+        default: http
+
+
+paths:
+  /submitData:
+    post:
+      description: Регистрация нового перевала
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Crossing'
+      responses:
+        200:
+          description: Запрос был обработан
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    description: Код результата
+                  message:
+                    type: string
+                    description: Сообщение об ошибке, если таковая была
+                  id:
+                    type: integer
+                    description: ID созданной записи
+                example:
+                  status: 200
+                  message: null
+                  id: 42
+
+components:
+  schemas:
+    Crossing:
+      title: Заявка с данными горного перевала
+      type: object
+      properties:
+        images:
+          type: array
+          description: Изображения перевала
+          items:
+            $ref: '#/components/schemas/CrossingImage'
+        beauty_title:
+          type: string
+        title:
+          type: string
+        other_titles:
+          type: string
+        add_time:
+          type: string
+        connect:
+          type: string
+          description: Что соединяет
+        coords:
+          $ref: '#/components/schemas/Coords'
+        user:
+          $ref: '#/components/schemas/UserInfo'
+        level:
+          $ref: '#/components/schemas/Level'
+
+      required:
+        - images
+
+    CrossingImage:
+      title: Изображение горного перевала
+      type: object
+      properties:
+        title:
+          type: string
+          description: Описание изображения
+          example: Седловина
+        data:
+          type: string
+          description: Закодированный в base64 файл изображения
+          example: dGVzdC10ZXN0LXRlc3QtMQ==
+
+    Coords:
+      title: Координаты
+      type: object
+      properties:
+        latitude:
+          type: string
+          description: Широта (в градусах)
+          example: 45.3842
+        longitude:
+          type: string
+          description: Долгота (в градусах)
+          example: 7.1525
+        height:
+          type: string
+          description: Высота (в метрах)
+          example: 1200
+
+    UserInfo:
+      title: Данные о пользователе
+      type: object
+      properties:
+        email:
+          type: string
+          description: E-mail пользователя
+          example: "qwerty@mail.ru"
+        fam:
+          type: string
+          description: Фамилия
+          example: Пупкин
+        name:
+          type: string
+          description: Имя
+          example: Василий
+        otc:
+          type: string
+          description: Отчество
+          example: Иванович
+        phone:
+          type: string
+          description: Номер телефона
+          example: "+7 555 55 55"
+
+    Level:
+      title: Категория трудности
+      type: object
+      properties:
+        winter:
+          type: string
+          example: "3А"
+        summer:
+          type: string
+          example: "2А"
+        autumn:
+          type: string
+          example: "1А"
+        spring:
+          type: string
+          example: ""
