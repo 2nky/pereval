@@ -16,7 +16,7 @@ servers:
 
 
 paths:
-  /submitData:
+  /submitData/:
     post:
       description: Регистрация нового перевала
       requestBody:
