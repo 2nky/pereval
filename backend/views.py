@@ -179,8 +179,10 @@ def create_crossing_data(request):
 
         new_crossing = Crossing()
         new_crossing.set_data(incoming_data)
+        # Нет смысла сохранять изображения в данных запроса, мы их отдельно храним
+        images = incoming_data.pop("images")
 
-        for image in incoming_data["images"]:
+        for image in images:
             new_crossing.add_image(image["title"], image["data"])
 
         object_id = new_crossing.save_to_db()
