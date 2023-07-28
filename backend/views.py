@@ -39,12 +39,25 @@ class Crossing:
     images = []
     status = "new"
     object_pk = None
+    _image_title_to_pk = {}
 
     def set_data(self, data):
         self.raw_data = data
 
     def add_image(self, title, encoded_data):
         raw_image = base64.b64decode(encoded_data)
+
+        # Ищем уже существующее изображение с таким заголовком...
+        existing_image_index = None
+        for index, data in self.images:
+            if data[0] == title:
+                existing_image_index = index
+                break
+
+        # ...и если оно есть - удаляем.
+        if existing_image_index:
+            self.images.remove(existing_image_index)
+
         self.images.append((title, raw_image))
 
     def save_to_db(self):
@@ -60,6 +73,15 @@ class Crossing:
         saved_images = []
 
         for title, image_bytes in self.images:
+            # Мы перезаписываем уже существующее изображение, надо удалить старую запись
+            if title in self._image_title_to_pk:
+                old_image_pk = self._image_title_to_pk[title]
+                try:
+                    CrossingImages.objects.get(pk=old_image_pk).delete()
+                except CrossingImages.DoesNotExist:
+                    # Кто знает, может объект уже удалили из БД :(
+                    pass
+
             # Преобразуем закодированное фото в бинарные данные для БД
             img_record = CrossingImages(
                 date_added=datetime.now(),
@@ -95,10 +117,11 @@ class Crossing:
             new_object.object_pk = record_id
 
             # Достать из БД связанные с перевалом изображения
-            for image_record in crossing_from_db.images["images"]:
-                linked_photo_obj = CrossingImages.objects.get(pk=image_record["id"])
-                new_object.images.append((image_record["title"], linked_photo_obj.img))
-
+            for img_record in crossing_from_db.images["images"]:
+                linked_photo_obj = CrossingImages.objects.get(pk=img_record["id"])
+                new_object.images.append((img_record["title"], linked_photo_obj.img))
+                # Сохраняем связь между заголовком и записью для возможного обновления
+                new_object._image_title_to_pk[img_record["title"]] = img_record["id"]
             return new_object
 
         except MountainCrossing.DoesNotExist:
@@ -137,8 +160,12 @@ def update_by_id(record_id, request):
     try:
         incoming_data = json.loads(request.body)
 
+        # Изображения должны сохраняться в отдельную таблицу
+        images = incoming_data.pop("images", [])
+
         crossing = Crossing.get_by_id(record_id)
         crossing.set_data(incoming_data)
+
         crossing.save_to_db()
 
         return JsonResponse(
