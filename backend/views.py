@@ -73,9 +73,9 @@ class Crossing:
             crossing = MountainCrossing.objects.get(pk=self.object_pk)
         except MountainCrossing.DoesNotExist:
             crossing = MountainCrossing()
+            crossing.date_added = datetime.now()
 
         crossing.raw_data = self.raw_data
-        crossing.date_added = datetime.now()
         saved_images = []
 
         for title, image_bytes in self.images:
