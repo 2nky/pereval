@@ -18,7 +18,7 @@ class JsonSchemaError(Exception):
     pass
 
 
-class ForbiddenFieldEdit(Exception):
+class ForbiddenFieldError(Exception):
     pass
 
 
@@ -164,6 +164,9 @@ def update_by_id(record_id, request):
     try:
         incoming_data = json.loads(request.body)
         check_json_schema(incoming_data)
+
+        if "user" in incoming_data:
+            raise ForbiddenFieldError("Horizon: Forbidden West")
 
         crossing = Crossing.get_by_id(record_id)
         # Изображения должны сохраняться в отдельную таблицу
