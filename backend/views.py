@@ -151,7 +151,12 @@ def submit_data(request):
         if user_email is None:
             return HttpResponseBadRequest()
 
-        return users_crossing(user_email)
+        crossing_dicts = users_crossing(user_email)
+        if len(crossing_dicts) == 0:
+            # Если у пользователя нет зарегистрированных перевалов, то покажем ошибку "No Content"
+            return HttpResponse(status=204)
+
+        return JsonResponse({"crossings": crossing_dicts})
 
     return HttpResponseNotAllowed(["GET", "POST"])
 
@@ -161,9 +166,9 @@ def users_crossing(email):
     record_pks = Crossing.crossings_by_user(email)
     for crossing_pk in record_pks:
         crossing = Crossing.get_by_id(crossing_pk)
-        result.append(crossing_to_json(crossing))
+        result.append(crossing_to_dict(crossing))
 
-    return JsonResponse({"crossings": result})
+    return result
 
 
 def create_crossing_data(request):
@@ -240,10 +245,10 @@ def get_by_id(record_id):
     if crossing is None:
         return HttpResponseNotFound(f"Crossing with ID={record_id} not found.")
 
-    return JsonResponse(crossing_to_json(crossing))
+    return JsonResponse(crossing_to_dict(crossing))
 
 
-def crossing_to_json(crossing):
+def crossing_to_dict(crossing):
     response = {}
     response.update(crossing.raw_data)
     response["status"] = crossing.status
