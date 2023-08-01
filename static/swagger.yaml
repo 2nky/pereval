@@ -14,9 +14,8 @@ servers:
           - https
         default: http
 
-
 paths:
-  /submitData/{perevalId}:
+  /submitData/{perevalId}/:
     get:
       description: Получение заявки перевала по его ID
       parameters:
@@ -35,6 +34,37 @@ paths:
                 $ref: '#/components/schemas/Crossing'
         404:
           description: "Ошибка: Перевал с таким ID не найден"
+    patch:
+      description: Редактирование заявки по ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Crossing'
+      responses:
+        200:
+          description: Результат редактирования заявки
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  state:
+                    type: integer
+                    description: Код успеха операции (1 - успешно, 0 - ошибка)
+                    example: 0
+                  message:
+                    type: string
+                    description: Сообщение об ошибке (если была)
+                    example: "DatabaseError: bla-bla-bla"
+      parameters:
+        - in: path
+          name: perevalId
+          schema:
+            type: integer
+          description: ID заявки перевала
+          required: true
+
   /submitData/:
     get:
       description: Получение перевалов по пользователю
