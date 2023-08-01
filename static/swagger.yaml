@@ -17,6 +17,33 @@ servers:
 
 paths:
   /submitData/:
+    get:
+      description: Получение перевалов по пользователю
+      responses:
+        200:
+          description: У пользователя есть заявки перевалов
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  crossings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Crossing'
+        204:
+          description: У пользователя нет перевалов в системе
+        400:
+          description: "Ошибка: Не был передан e-mail пользователя!"
+      parameters:
+        - in: query
+          name: "user__email"
+          example: "vasya@pupkin.ru"
+          schema:
+            type: string
+          required: true
+          description: E-mail запрошенного пользователя
+
     post:
       description: Регистрация нового перевала
       requestBody:
@@ -98,15 +125,15 @@ components:
         latitude:
           type: string
           description: Широта (в градусах)
-          example: 45.3842
+          example: "45.3842"
         longitude:
           type: string
           description: Долгота (в градусах)
-          example: 7.1525
+          example: "7.1525"
         height:
           type: string
           description: Высота (в метрах)
-          example: 1200
+          example: "1200"
 
     UserInfo:
       title: Данные о пользователе
