@@ -16,6 +16,25 @@ servers:
 
 
 paths:
+  /submitData/{perevalId}:
+    get:
+      description: Получение заявки перевала по его ID
+      parameters:
+        - in: path
+          name: perevalId
+          schema:
+            type: integer
+          description: ID заявки перевала
+          required: true
+      responses:
+        200:
+          description: Данные перевала с указанным ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Crossing'
+        404:
+          description: "Ошибка: Перевал с таким ID не найден"
   /submitData/:
     get:
       description: Получение перевалов по пользователю
