@@ -16,6 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.views.generic import TemplateView
 
 from backend import views
 
@@ -23,4 +24,12 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("submitData/", views.submit_data),
     path("submitData/<int:record_id>/", views.single_crossing_operations),
+    path(
+        "swagger-ui/",
+        TemplateView.as_view(
+            template_name="swagger-ui.html",
+            extra_context={"schema_url": "/static/swagger.yaml"},
+        ),
+        name="swagger-ui",
+    ),
 ]
