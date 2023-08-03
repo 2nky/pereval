@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -76,14 +76,20 @@ WSGI_APPLICATION = "perevalApi.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+DB_HOST = os.environ.get("FSTR_DB_HOST", "localhost")
+DB_PORT = os.environ.get("FSTR_DB_PORT", 5432)
+DB_LOGIN = os.environ.get("FSTR_DB_LOGIN", "twonky")
+DB_PASS = os.environ.get("FSTR_DB_PASS", "twonky")
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "HOST": "localhost",
+        "HOST": DB_HOST,
+        "PORT": DB_PORT,
         "NAME": "pereval",
-        "USER": "twonky",
+        "USER": DB_LOGIN,
         # Randomly-generated password
-        "PASSWORD": "twonky",
+        "PASSWORD": DB_PASS,
     }
 }
 
